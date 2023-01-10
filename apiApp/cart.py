@@ -305,212 +305,133 @@ def addToCart(request,format=None):
             return Response(res)
 @api_view(['POST'])
 def checkout(request,format=None):
-    if request.method == 'POST':
-        token = request.data['token']
-        try:
-                user = user_data.objects.get(token = token)
-
-        except:
-            res = {
-                    'status':False,
-                    'message':'Something went wrong'
-                    }
-        delivery_details = {
-            
-            
-                "heading":"Delivery Details",
-                "label": "First Name",       
-                'value' : user.name,
-                'Email ID' :user.email,
-                'Phone Number':user.phone_no
-     
-                
-                } 
-        user_add=user_address.objects.filter(user_id=user.id).values().last()
-        add_line1=user_add['add_line_1']
-        add_line2=user_add['add_line_2'] 
-        landmark=user_add['landmark']
-        state=user_add['state']
-        locality=add_line1+add_line2+landmark
-        address_details={
-            "heading":"Address",
-            "locality":locality,
-            "City":user_add['city']+state,
-            "Pincode":user_add["pincode"]
-
-        }
-    products = product_data.objects.values()
-    items = user_cart.objects.filter(user_id = user.id).values()
-    
-    product_list = []
-    final_sub_total = 0
-    final_making_charges = 0
-    shipping = 100
-    tax = 1.8
-    for i in items:
-        prod_data = products.filter(id = i['product_id']).last()
-        prod_array=[]
-        prod_dict = {
-                     'cart_product_id':i['id'],
-                     'id':prod_data['id'],
-                     'image':prod_data['image'].split(',')[0],
-                     'title':prod_data['name'],
-                     'quantity':i['quantity']
-                    }
-        prod_array=[prod_dict['cart_product_id'],prod_dict['id'],prod_dict['image'],prod_dict['title'],prod_dict['quantity']]
-        
-        # -------------------------- Diamond Price ---------------------------------
-        diamond_quality = i['diamond_quality'].strip()
-        diamond_size = i['diamond_size'].strip()
-        quantity = eval(i['quantity'].strip())
-
-        diamond_obj = diamond_pricing.objects.filter(diamond_quality = diamond_quality,
-                                                     diamond_size = diamond_size).values().last()
-        diamond_sum = eval(diamond_obj['diamond_pricing'].strip())
-
-        #--------------------------- Metal Price -----------------------------------
-        weight = i['weight'].strip().split('/')
-        metal_obj = metal_price.objects.values().first()
-        if len(weight) > 1:
-            metal_sum = (eval(weight[0]) * eval(metal_obj['platinum'])) \
-                        +\
-                        (eval(weight[1]) * eval(metal_obj['gold']))
-        else:
-            metal_sum = eval(weight[0]) * eval(metal_obj['platinum'])
-
-
-        # --------------------------- Making Charges -------------------------------
-        if len(weight) > 1:
-            making_charges_sum = (eval(weight[0]) * eval(metal_obj['making_charges'])) \
-                        +\
-                        (eval(weight[1]) * eval(metal_obj['making_charges']))
-        else:
-            making_charges_sum = eval(weight[0]) * eval(metal_obj['making_charges'])
-
-
-        product_total = diamond_sum + metal_sum + making_charges_sum
-        prod_dict['price'] = product_total*quantity
-        product_list.append(prod_dict)
-        final_sub_total = final_sub_total + diamond_sum + metal_sum
-        final_making_charges = final_making_charges + making_charges_sum
-
-    checkoutt = {
-                'sub_total':{
-                                'title':'Sub Total', 
-                                'amount': str(round(final_sub_total,2)*quantity),
-                            },
-                'shipping': {
-                                'title': 'Shipping',
-                                'charges': shipping,
-                            },
-                'tax': {
-                                'title': 'Estimated Tax',
-                                'amount': str(tax)+'%',
+    token = request.data['token']
+    try:
+        user = user_data.objects.get(token = token)
+    except:
+        res = {
+                'status':False,
+                'message':'Something went wrong'
+            }
+    res = {}
+    # -------------------------------- Form Part --------------------------------------------------
+    form = {}
+    form['header'] = {
+                        'heading':'Delivery Details'
+                     }
+    form['content'] = [
+                        {
+                            "label": "Full Name",
+                            "value":user.name,
                         },
-                'making_charges': {
-                                'title':'Making Charges',
-                                'amount': str(round(final_making_charges,2)*quantity)
-                            },
-                'total': {
-                                'title':'Estimated Total',
-                                'amount': round((final_making_charges+final_sub_total)*quantity+shipping,2)
-                            },
-                }
-   
-   
-    res={
-        "form": {
-            "header": {
-            "heading": "Delivery Details",
-            "sub_heading": "Edit"
-            },
-            "content": [
-            {
-                "label": "Full Name",
-                'value' : user.name,
-            },
-            {
-                "label": "Email ID",
-                'value' : user.email,
-            },
-            {
-                "label": "Phone Number",
-                'value' : user.phone_no,
+                        {
+                            "label": "Email ID",
+                            "value":user.email,
+                        },
+                        {
+                            "label": "Phone Code",
+                            "value":user.phone_code
+                        },
+                        {
+                            "label": "Phone Number",
+                            "value":user.phone_no
+                        }
+                      ]   
+    res['form'] = form
+
+    #------------------------ Address Part ---------------------------------------------------------
+    address = {}  
+    address['header'] = {
+                            'heading':'Address'
+                        }
+
+    address['content'] = user_address.objects.filter(user_id = user.id)\
+                                             .annotate(
+                                                        locality = Concat(
+                                                                            F('add_line_1'),
+                                                                            V(', '),
+                                                                            F('add_line_2'),
+                                                                            output_field=CharField()
+                                                                         )
+                                                      ).values('locality','city','pincode',)
+    res['address'] = address
+
+    #------------------- Items & checkout part ------------------------------------------------------
+    item = {}
+    item['header'] = {
+                            'heading':'Item Details'
+                        }
+
+    metal_obj = metal_price.objects.values().last()
+    diamond_obj = diamond_pricing.objects.values()
+    item = {}  
+    item['header'] = {
+                            'heading':'Item Details'
+                        }
+    cart_list = user_cart.objects.filter(user_id = user.id).values()
+    content = []
+    final_sum = 0
+    for i in cart_list:
+        weight_0 = i['weight'].split('/') 
+        sum = 0
+        metal_sum = 0
+        if len(weight_0)>1:
+            metal_sum = metal_sum + ( eval(metal_obj['platinum']) * eval(weight_0[0]) )
+            metal_sum = metal_sum + ( eval(metal_obj['gold']) * eval(weight_0[1]) )
+        else:
+            metal_sum = metal_sum + ( eval(metal_obj['platinum']) * eval(weight_0[0]) )
+        sum = sum+ metal_sum 
+
+
+        if i['diamond_quality'] != 'P':
+            diamond_sum = diamond_obj.filter(diamond_quality = i['diamond_quality'].strip(),diamond_size = i['diamond_size'].strip()).last()
+            sum = sum+ eval(diamond_sum['diamond_pricing'])    
+
+        if len(weight_0)>1:
+            making_price = ( eval(weight_0[0]) + eval(weight_0[1]) ) * eval(metal_obj['making_charges'])
+            sum = sum + making_price
+        else:
+            making_price = eval(weight_0[0]) * eval(metal_obj['making_charges'])
+        sum = sum + making_price  
+        sum = sum * eval(i['quantity'])
+        final_sum = final_sum + sum
+
+
+        product = product_data.objects.filter(id = i['product_id']).values().last()
+        d = {
+                'id': product['id'],
+                'image':product['image'],
+                'title': product['name'],
+                'price' :round(sum,2),
+                'qty': i['quantity']
             }
-            ]
-        },
-        "address": {
-            "header": {
-            "heading": "Address",
-            "sub_heading": "Edit"
-            },
-            "content": [
-            {
-                "locality": locality,
-                "city": user_add['city']+state,
-                "pincode": user_add["pincode"]
-            }
-            ]
-        },
-        "card": {
-            "header": {
-            "heading": "Card",
-            "sub_heading": "Edit"
-        },
-            "content": [
-        {
-            "number": "4454-0213-4594-4523",
-            "cvv": "623",
-            "name": "Vicky Waelchi",
-            "expiry": "12/2023"
-        }
-        ]
-        },
-        "item": {
-            "header": {
-            "heading": "Item Details",
-            "sub_heading": "Edit"
-            },
-            "content":  prod_dict
-            },
-        "checkout_data": {
-            "coupon": {
-            "title": "Coupon Code",
-            "button": "Add"
-            },
-            "packaging": {
-            "title": "Gift Packaging",
-            "button": "Add"
-            },
-            "sub_total": {
-            "title": "Sub Total",
-            "amount": str(round(final_sub_total,2)*quantity)
-            },
-            "shipping": {
-            "title": "Shipping",
-            "charges": shipping,
-            },
-            "tax": {
-            "title": "Estimated Tax",
-            "amount": str(tax)+'%',
-            },
-            "total": {
-            "title": "Estimated Total",
-            "amount": round((final_making_charges+final_sub_total)*quantity+shipping,2)
-            },
-        "checkout_button": "CONTINUE"
-    }}
+        content.append(d)
+    item['content'] = content
+    res['item'] = item
+
+    checkout_data = {
+                        'sub_total': {
+                                        'title':'Sub Total',
+                                        'amount':str(round(final_sum,2))
+                                     },
+                        'shipping': {
+                                        'title':'Shipping',
+                                        'amount':'100'
+                                     },
+                        'tax': {
+                                        'title':'Estimated Tax',
+                                        'amount':'1.8%'
+                                     },
+                        'total': {
+                                        'title':'Estimated Total',
+                                        'amount':str(round(final_sum+100,2))
+                                     },             
+                    }
+    res['checkout_data'] = checkout_data
     
-                
 
-      
-
-                            
+    
     return Response(res)
+    
 
-        
-            
-                
-
-
-        
+    

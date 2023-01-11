@@ -35,8 +35,12 @@ from apiApp.functions import profile_view
 @api_view(['POST'])
 def profileView(request,format=None):
     token = request.data['token']
+    wishlist_product_array=[]
     try:
         user = user_data.objects.get(token = token)
+        wishlist_view=user_whishlist.objects.filter(user_id=user.id).values_list('product_id',flat=True)
+        wishlist_product_array=product_data.objects.filter(id__in=wishlist_view).values('name','category','image')
+  
         user_res = {
                 'name': user.name,
                 'gender':user.gender,
@@ -44,6 +48,7 @@ def profileView(request,format=None):
                 'email':user.email,
                 'phone_no':user.phone_no,
                 'phone_code':user.phone_code,
+
                }
 
         add_res = user_address.objects.filter(user_id = user.id)\
@@ -56,7 +61,8 @@ def profileView(request,format=None):
                 'user':user_res,
                 'address':{
                             'content':add_res
-                          }
+                          },
+                'wishlist':wishlist_product_array
               }
     except:
         res = {

@@ -69,3 +69,13 @@ class metal_price(models.Model):
     platinum = models.TextField()
     gold = models.TextField()
     making_charges = models.TextField()
+
+#-------------------------------------Payments-----------------------------------------
+
+class Payments(models.Model):
+    transaction_id=models.TextField()
+    order_id=models.TextField()
+    #to be returned by razorpay
+    razorpay_order_id=models.TextField()
+    razorpay_payment_id=models.TextField()
+    razorpay_signature=models.TextField()

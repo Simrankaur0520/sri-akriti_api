@@ -8,6 +8,7 @@ import apiApp.auth as auth
 import apiApp.user_data as user
 import apiApp.cart as cart
 import apiApp.admin_views as admin_views
+import apiApp.payments as pay
 
 urlpatterns = [
     #-------------------Filters------------------------------------
@@ -38,6 +39,10 @@ urlpatterns = [
     
     path('adminViewAllProducts',admin_views.adminViewAllProducts,name='adminViewAllProducts'),
     path('adminSingleProduct',admin_views.adminSingleProduct,name='adminSingleProduct'),
+
+    path('razorpay_payment_view', pay.razorpay_payment_view, name='razorpay_payment_view'),
+    path('payment_verification', pay.payment_verification, name='payment_verification'),
+
     
     
 

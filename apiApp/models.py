@@ -73,9 +73,17 @@ class metal_price(models.Model):
 #-------------------------------------Payments-----------------------------------------
 
 class Payments(models.Model):
-    transaction_id=models.TextField()
-    order_id=models.TextField()
-    #to be returned by razorpay
-    razorpay_order_id=models.TextField()
+    name=models.TextField()
+    amount=models.TextField()
+    provider_order_id=models.TextField()
+    transaction_id=models.TextField(blank=True)
+
+class Razorpayment(models.Model):
+    razorpay_order_id=models.TextField(blank=True)
     razorpay_payment_id=models.TextField()
     razorpay_signature=models.TextField()
+
+class Payment_status(models.Model):
+    Success='Success'
+    FAILURE = "Failure"
+    PENDING = "Pending"

@@ -296,7 +296,7 @@ def addToCart(request,format=None):
                 return Response(res)
                     
 
-        #---------------Except block for product id
+        #---------------Except block for product id to perform further actions
         except:
             res = {
                     'status':False,

@@ -81,7 +81,7 @@ class Payments(models.Model):
 class Razorpayment(models.Model):
     razorpay_order_id=models.TextField(blank=True)
     razorpay_payment_id=models.TextField()
-    razorpay_signature=models.TextField()
+    razorpay_signature_id=models.TextField()
 
 class Payment_status(models.Model):
     Success='Success'

@@ -175,3 +175,7 @@ def priceCalculation(request,format=None):
                 }
         return Response(res)
 
+
+
+def new(request):
+    pass

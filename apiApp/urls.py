@@ -43,7 +43,7 @@ urlpatterns = [
 
     path('start_payment', pay.start_payment, name='start_payment'),
     path('success', pay.handle_payment_success, name='handle_payment_success'),
-    #path('cart_to_order_shift', pay.cart_to_order_shift, name='cart_to_order_shift'),
+    path('cart_to_order_shift', pay.cart_to_order_shift, name='cart_to_order_shift'),
 
 
     #path('order_status_list_view', od.order_status_list_view, name='order_status_list_view')

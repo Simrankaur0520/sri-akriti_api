@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .serializers import OrderSerializer
 
-from .models import Order,user_data,user_cart,order_status
+from .models import Order,user_data,user_cart,order_status,product_data
 
 from django.views.decorators.csrf import csrf_exempt
 
@@ -105,16 +105,25 @@ def handle_payment_success(request):
 
     return Response(res_data)
 
-'''@api_view(['GET'])
+@api_view(['POST'])
 def cart_to_order_shift(request,format=None):
-    #token=token
-    #user = user_data.objects.get(token = token)
-    items=user_cart.objects.values()
-    #for i in items:
-     #   print(i)
+    token=request.data['token']
+    products = product_data.objects.values()
+    user = user_data.objects.get(token = token)
+    items=user_cart.objects.filter(user_id = user.id).values()
+    for i in items:
+        prod_data = products.filter(id = i['product_id']).last()
     
-    delivery_status=models.TextField(blank=True)
-    date=models.TextField(blank=True)
+        prod_dict = {
+                     'cart_product_id':i['id'],
+                     'id':prod_data['id'],
+                     'image':prod_data['image'].split(',')[0],
+                     'title':prod_data['name'],
+                     'quantity':i['quantity']
+                    }
+    
+    '''delivery_status=models.TextField(blank=True)
+        date=models.TextField(blank=True)
     product_img=models.TextField(blank=True)
     product_name=models.TextField(blank=True)
     product_code=models.TextField(blank=True)
@@ -153,8 +162,8 @@ def cart_to_order_shift(request,format=None):
         'user_id':user.id,
         'payment_status':"True"
         }
-    #res=items.product_id
-    return Response(items)'''
+    #res=items.product_id'''
+    return Response(prod_dict)
         
 
 

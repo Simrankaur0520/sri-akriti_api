@@ -32,8 +32,3 @@ from apiApp.models import Order,order_status
 
 #----------------------------extra---------------------------------------------------
 import simplejson as json
-
-@api_view(['GET'])
-def order_status_list_view(request, format=None):
-    obj=Order.objects.values().all()
-    return Response(obj)

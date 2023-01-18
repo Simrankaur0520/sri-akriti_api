@@ -72,18 +72,25 @@ class metal_price(models.Model):
 
 #-------------------------------------Payments-----------------------------------------
 
-class Payments(models.Model):
-    name=models.TextField()
-    amount=models.TextField()
-    provider_order_id=models.TextField()
-    transaction_id=models.TextField(blank=True)
+class Order(models.Model):
+    order_product = models.CharField(max_length=100)
+    order_amount = models.CharField(max_length=25)
+    order_payment_id = models.CharField(max_length=100)
+    isPaid = models.BooleanField(default=False)
+    order_date = models.DateTimeField(auto_now=True)
+    user_id=models.CharField(max_length=100,blank=True)
+    
 
-class Razorpayment(models.Model):
-    razorpay_order_id=models.TextField(blank=True)
-    razorpay_payment_id=models.TextField()
-    razorpay_signature_id=models.TextField()
 
-class Payment_status(models.Model):
-    Success='Success'
-    FAILURE = "Failure"
-    PENDING = "Pending"
+#-------------------------------Order status-------------------------------------------
+
+class order_status(models.Model):
+    status=models.TextField(blank=True,default="placed")
+    date=models.TextField(blank=True)
+    product_img=models.TextField(blank=True)
+    product_name=models.TextField(blank=True)
+    product_code=models.TextField(blank=True)
+    product_price=models.TextField(blank=True)
+    user_id=models.TextField(blank=True)
+    payment_status=models.BooleanField(default=False)
+    

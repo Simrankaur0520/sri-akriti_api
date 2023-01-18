@@ -1,31 +1,27 @@
 import simplejson as json
-import os
+import json
+
 import razorpay
-from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from apiApp.models import Payment_status,Payments
-from rest_framework.decorators import parser_classes,api_view
-from rest_framework.parsers import MultiPartParser,FormParser
-from rest_framework.response import Response
+from .serializers import OrderSerializer
+
+from .models import Order,user_data,user_cart,order_status
+
+from django.views.decorators.csrf import csrf_exempt
 
 
-#from payments. models import RazorpayPayment
-
-RAZOR_KEY = os.getenv('RAZORPAY_KEY', None)
-RAZOR_SECRET = os.getenv('RAZORPAY_SECRET', None)
-
-razorpay_client = razorpay.Client(auth=("rzp_test_gHJS0k5aSWUMQc", "8hPVwKRnj4DZ7SB1wyW1miaf"))
-
-#creating razorpay order
 @api_view(['POST'])
-def razorpay_payment_view(request,format=None):
+def start_payment(request):
     amount = request.data['amount']
     name = request.data['name']
+    token=request.data['token']
 
     client = razorpay.Client(auth=('rzp_test_gHJS0k5aSWUMQc', '8hPVwKRnj4DZ7SB1wyW1miaf'))
+    user=user_data.objects.filter(token=token).values()
+    #cart_to_order_shift(token)
 
-    payment = client.order.create({"amount": int(amount) * 100, 
+    payment = client.order.create({"amount": eval(amount) * 100, 
                                    "currency": "INR", 
                                    "payment_capture": "1"})
 
@@ -45,14 +41,19 @@ def razorpay_payment_view(request,format=None):
 
     data = {
         "payment": payment,
-        "order": serializer.data
+        "order": serializer.data,
+        "user details" :user
     }
     return Response(data)
 
+
+
+@csrf_exempt
 @api_view(['POST'])
-def payment_verification(request,format=None):
+def handle_payment_success(request):
     # request.data is coming from frontend
-    res = json.loads(request.data["response"])
+    # print(type(request.data["response"]))
+    res = eval(request.data["response"])
 
     """res will be:
     {'razorpay_payment_id': 'pay_G3NivgSZLx7I9e', 
@@ -77,8 +78,7 @@ def payment_verification(request,format=None):
     # get order by payment_id which we've created earlier with isPaid=False
     order = Order.objects.get(order_payment_id=ord_id)
 
-    
-    #we will pass this whole data in razorpay client to verify the payment
+    # we will pass this whole data in razorpay client to verify the payment
     data = {
         'razorpay_order_id': ord_id,
         'razorpay_payment_id': raz_pay_id,
@@ -90,7 +90,6 @@ def payment_verification(request,format=None):
     # checking if the transaction is valid or not by passing above data dictionary in 
     # razorpay client if it is "valid" then check will return None
     check = client.utility.verify_payment_signature(data)
-    print(check)
 
     if not check:
         print("Redirect to error url or error page")
@@ -106,6 +105,65 @@ def payment_verification(request,format=None):
 
     return Response(res_data)
 
+'''@api_view(['GET'])
+def cart_to_order_shift(request,format=None):
+    #token=token
+    #user = user_data.objects.get(token = token)
+    items=user_cart.objects.values()
+    #for i in items:
+     #   print(i)
+    
+    delivery_status=models.TextField(blank=True)
+    date=models.TextField(blank=True)
+    product_img=models.TextField(blank=True)
+    product_name=models.TextField(blank=True)
+    product_code=models.TextField(blank=True)
+    product_price=models.TextField(blank=True)
+    user_id=models.TextField(blank=True)
+    payment_status=models.BooleanField(default=False)
+
+    user = user_data.objects.get(token = token)
+    wishlist_view=user_whishlist.objects.filter(user_id=user.id).values_list('product_id',flat=True)
+    wishlist_product_array=product_data.objects.filter(id__in=wishlist_view).values('name','category','image')
+  
+    user_res = {
+                'name': user.name,
+                'gender':user.gender,
+                'dob':user.dob,
+                'email':user.email,
+                'phone_no':user.phone_no,
+                'phone_code':user.phone_code,
+
+               }
+    cart_product_id": 21,
+            "id": 893,
+            "image": "media/products/mock_product.png",
+            "title": "SA-BAND-057",
+            "quantity": "2",
+            "price": 276639.957      
+
+    order_res={
+        "Delivery_Status":"Placed",
+        #'date':"",
+        'product_img':items.image,
+        'product_name':items.name,
+        'product_code':items.id,
+        'product_price':items.price/items.quantity,
+        #'order_id':Order_id,
+        'user_id':user.id,
+        'payment_status':"True"
+        }
+    #res=items.product_id
+    return Response(items)'''
+        
+
+
+
+
+
+
+   
 
 
     
+

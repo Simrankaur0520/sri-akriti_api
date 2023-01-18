@@ -62,7 +62,6 @@ def addToCart(request,format=None):
                                 size = size,
                                 diamond_quality = diamond_quality,
                                 quantity = '1'
-
                             )
             data.save()
             res = {
@@ -98,7 +97,15 @@ def getUserCart(request,format=None):
         return Response(res)
     products = product_data.objects.values()
     items = user_cart.objects.filter(user_id = user.id).values()
-    
+    if len(items)==0:
+        res = {
+            'status':True,
+            'message':'Cart generated',
+            'products':[],
+            'checkout_data': []
+          }
+        return Response(res)
+    #quantity=1
     product_list = []
     final_sub_total = 0
     final_making_charges = 0
@@ -117,12 +124,18 @@ def getUserCart(request,format=None):
         
         # -------------------------- Diamond Price ---------------------------------
         diamond_quality = i['diamond_quality'].strip()
-        diamond_size = i['diamond_size'].strip()
         quantity = eval(i['quantity'].strip())
+        
+       
 
-        diamond_obj = diamond_pricing.objects.filter(diamond_quality = diamond_quality,
-                                                     diamond_size = diamond_size).values().last()
-        diamond_sum = eval(diamond_obj['diamond_pricing'].strip())
+        if diamond_quality != 'P':
+            diamond_size = eval(i['diamond_size'].strip())
+            #quantity = eval(i['quantity'].strip())
+            diamond_obj = diamond_pricing.objects.filter(diamond_quality = diamond_quality,
+                                                        diamond_size = diamond_size).values().last()
+            diamond_sum = eval(diamond_obj['diamond_pricing'].strip())
+        else:
+            diamond_sum = 0
 
         #--------------------------- Metal Price -----------------------------------
         weight = i['weight'].strip().split('/')
@@ -432,6 +445,3 @@ def checkout(request,format=None):
 
     
     return Response(res)
-    
-
-    

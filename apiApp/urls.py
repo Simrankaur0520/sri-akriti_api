@@ -9,6 +9,7 @@ import apiApp.user_data as user
 import apiApp.cart as cart
 import apiApp.admin_views as admin_views
 import apiApp.payments as pay
+import apiApp.order_status as od
 
 urlpatterns = [
     #-------------------Filters------------------------------------
@@ -40,9 +41,12 @@ urlpatterns = [
     path('adminViewAllProducts',admin_views.adminViewAllProducts,name='adminViewAllProducts'),
     path('adminSingleProduct',admin_views.adminSingleProduct,name='adminSingleProduct'),
 
-    path('razorpay_payment_view', pay.razorpay_payment_view, name='razorpay_payment_view'),
-    path('payment_verification', pay.payment_verification, name='payment_verification'),
+    path('start_payment', pay.start_payment, name='start_payment'),
+    path('success', pay.handle_payment_success, name='handle_payment_success'),
+    #path('cart_to_order_shift', pay.cart_to_order_shift, name='cart_to_order_shift'),
 
+
+    #path('order_status_list_view', od.order_status_list_view, name='order_status_list_view')
     
     
 
